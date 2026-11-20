@@ -12,29 +12,33 @@ OUTPUT_FILE = BASE_DIR / "data" / "chunks.json"
 
 def read_document(path):
     """Return text sections with source metadata."""
+    sections = []
 
     if path.suffix.lower() == ".pdf":
         reader = PdfReader(path)
 
         for page_number, page in enumerate(reader.pages, start=1):
             text = page.extract_text() or ""
-            print(f"Page {page_number}: {text[:300]}")
 
             if text.strip():
-                yield {
+                sections.append({
                     "document": path.name,
                     "section": f"Page {page_number}",
                     "page": page_number,
                     "text": text,
-                }
+                })
             else:
                 print(f"Warning: no text in {path.name}, page {page_number}")
+
+    return sections
 
 
 def split_into_chunks(text, chunk_size=200):
     """Group paragraphs into chunks without exceeding the word limit."""
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero")
+
+    chunks = []
 
     # Paragraphs are separated by one or more blank lines.
     paragraphs = re.split(r"\n\s*\n", text.strip())
@@ -49,21 +53,36 @@ def split_into_chunks(text, chunk_size=200):
         if not words:
             continue
 
-        # Split unusually long paragraphs by word count.
+        # Prefer sentence boundaries when a paragraph exceeds the word limit.
         if len(words) > chunk_size:
             if current:
-                yield "\n\n".join(current)
+                chunks.append("\n\n".join(current))
                 current = []
                 current_words = 0
 
-            for start in range(0, len(words), chunk_size):
-                yield " ".join(words[start:start + chunk_size])
+            sentences = re.split(r"(?<=[.!?;;])\s+", paragraph)
+
+            for sentence in sentences:
+                sentence_words = sentence.split()
+
+                if current_words + len(sentence_words) > chunk_size and current:
+                    chunks.append(" ".join(current))
+                    current = []
+                    current_words = 0
+
+                # A single sentence may still be longer than the limit.
+                while len(sentence_words) > chunk_size:
+                    chunks.append(" ".join(sentence_words[:chunk_size]))
+                    sentence_words = sentence_words[chunk_size:]
+
+                current.append(" ".join(sentence_words))
+                current_words += len(sentence_words)
 
             continue
 
         # Save the current chunk if this paragraph would exceed the limit.
         if current_words + len(words) > chunk_size:
-            yield "\n\n".join(current)
+            chunks.append("\n\n".join(current))
             current = []
             current_words = 0
 
@@ -71,7 +90,9 @@ def split_into_chunks(text, chunk_size=200):
         current_words += len(words)
 
     if current:
-        yield "\n\n".join(current)
+        chunks.append("\n\n".join(current))
+
+    return chunks
 
 
 def ingest():
