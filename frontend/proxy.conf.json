@@ -1,0 +1,8 @@
+{
+  "/ask": {
+    "target": "http://127.0.0.1:8000",
+    "secure": false,
+    "timeout": 150000,
+    "proxyTimeout": 150000
+  }
+}

@@ -1,0 +1,65 @@
+<header class="header">
+  <a class="brand" href="/" aria-label="Document Assistant home">
+    <span class="brand-mark" aria-hidden="true">D<span>.</span></span>
+    <span>Document Assistant</span>
+  </a>
+  <span class="header-note">Alexander Innovation Zone</span>
+</header>
+
+<main>
+  <section class="intro" aria-labelledby="page-title">
+    <p class="eyebrow">ANSWERS FROM YOUR DOCUMENTS</p>
+    <h1 id="page-title">Ask a question.<br><span>Find it in the source.</span></h1>
+    <p class="description">Explore the company statutes, founding law, and operating regulations. Every answer comes with its supporting passages.</p>
+  </section>
+
+  <div class="workspace">
+    <section class="question-panel" aria-labelledby="question-title">
+      <h2 id="question-title">What would you like to know?</h2>
+      <form (ngSubmit)="submit()">
+        <label for="question">Your question</label>
+        <textarea id="question" name="question" [(ngModel)]="question" rows="5"
+          maxlength="2000" required [disabled]="loading()"
+          placeholder="Ποιος είναι ο σκοπός της εταιρείας;"
+          aria-describedby="question-help"></textarea>
+        <p id="question-help" class="hint">Ask in Greek for the best keyword matches.</p>
+        <button class="submit" type="submit" [disabled]="loading() || !question.trim()">
+          {{ loading() ? 'Finding your answer…' : 'Ask the documents' }}
+        </button>
+      </form>
+      <div class="examples">
+        <h3>Try a question</h3>
+        @for (example of examples; track example) {
+          <button type="button" class="example" [disabled]="loading()" (click)="question = example">{{ example }}</button>
+        }
+      </div>
+    </section>
+
+    <section class="answer-panel" aria-labelledby="answer-title" [attr.aria-busy]="loading()">
+      <div class="panel-heading"><h2 id="answer-title">Your answer</h2><span class="tag">DOCUMENT SEARCH</span></div>
+      <div aria-live="polite" aria-atomic="true">
+        @if (loading()) {
+          <div class="empty-state"><span class="loading-mark" aria-hidden="true"></span><h3>Reading the relevant passages</h3><p>Your local model is preparing an answer. This may take a minute.</p></div>
+        } @else if (result(); as response) {
+          <p class="answer-text">{{ response.answer }}</p>
+          @if (response.sources.length) {
+            <div class="sources">
+              <h3>Supporting sources</h3>
+              <ol>
+                @for (source of response.sources; track $index) {
+                  <li><span class="source-name">{{ source.document }}</span><span class="source-page">PDF page {{ source.page }}</span></li>
+                }
+              </ol>
+            </div>
+          } @else {
+            <p class="hint no-source">No supporting passages were found for this question.</p>
+          }
+        } @else if (!error()) {
+          <div class="empty-state"><span class="document-mark" aria-hidden="true">≡</span><h3>Start with a question</h3><p>Your answer and its document sources will appear here.</p></div>
+        }
+      </div>
+      @if (error()) { <p class="error" role="alert">{{ error() }}</p> }
+    </section>
+  </div>
+  <footer>Based on the included documents. Check the cited pages for full context.</footer>
+</main>
