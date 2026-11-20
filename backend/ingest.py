@@ -102,7 +102,7 @@ def ingest():
         if not path.is_file():
             continue
 
-        if path.suffix.lower() not in {".pdf", ".md", ".txt"}:
+        if path.suffix.lower() not in {".pdf"}:
             continue
 
         for section in read_document(path):
