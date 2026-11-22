@@ -252,11 +252,10 @@ The fourth answer contains repetition and additional regulatory details; it is r
 
 OpenAI Codex was used during development for:
 
-- Explaining and revising PDF ingestion/chunking, including replacing generators with explicit lists.
 - Implementing and debugging BM25, Greek preprocessing, vector search, index validation, hybrid fusion and retrieval evaluation.
 - Building the FastAPI endpoint, response/source validation and error handling.
 - Creating the NgModule-based Angular UI, HTTP service, accessibility/loading states and search-mode radio buttons.
 - Writing and reorganizing automated tests, investigating regressions, running checks and capturing the example outputs above.
 - Drafting setup instructions, design explanations, this README and the interview study guide.
 
-AI-generated suggestions were checked through code inspection, automated tests, retrieval comparisons and selected live model runs. Those checks exposed remaining failures rather than proving all answers correct. The use of AI tools is disclosed; understanding and explaining the submitted implementation remains the candidate's responsibility.
+
