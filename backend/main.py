@@ -1,4 +1,5 @@
 import json
+from typing import Literal
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -7,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from llm_api import ask
 from retrieve import CHUNKS_FILE
+from vector_search import EmbeddingIndexError
 
 
 app = FastAPI(title="Document Assistant")
@@ -16,6 +18,7 @@ chunks = json.loads(CHUNKS_FILE.read_text(encoding="utf-8"))
 class AskRequest(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     question: str = Field(min_length=1, max_length=2000)
+    search_mode: Literal["bm25", "vector", "hybrid"] = "bm25"
 
 
 class Source(BaseModel):
@@ -32,7 +35,7 @@ class AskResponse(BaseModel):
 @app.post("/ask", response_model=AskResponse)
 def ask_question(request: AskRequest):
     try:
-        return ask(request.question, chunks)
+        return ask(request.question, chunks, search_mode=request.search_mode)
     except (ConnectionError, httpx.ConnectError) as error:
         raise HTTPException(
             status_code=503, detail="Cannot connect to Ollama. Make sure it is running."
@@ -42,6 +45,10 @@ def ask_question(request: AskRequest):
     except ResponseError as error:
         raise HTTPException(
             status_code=502, detail="Ollama failed to answer. Check that llama3.2:3b is installed."
+        ) from error
+    except EmbeddingIndexError as error:
+        raise HTTPException(
+            status_code=503, detail="Embedding index unavailable. Run python backend/vector_search.py."
         ) from error
     except (ValueError, KeyError, TypeError) as error:
         raise HTTPException(

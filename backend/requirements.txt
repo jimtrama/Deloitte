@@ -3,3 +3,4 @@ uvicorn==0.39.0
 ollama==0.6.3
 pypdf==6.21.4
 httpx==0.28.1
+snowballstemmer==3.1.1

@@ -5,25 +5,58 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
+import snowballstemmer
+
 
 CHUNKS_FILE = Path(__file__).resolve().parent / "data" / "chunks.json"
 STOP_WORDS = {
     "ο", "η", "το", "οι", "τα", "του", "της", "των", "τον", "την",
     "τις", "τους", "και", "σε", "στο", "στη", "στην", "στον", "με",
     "για", "απο", "να", "ειναι", "τι", "ποιος", "ποια", "ποιο", "που",
+    "ποτε", "πως", "ποσο", "ποσα", "ποσοι", "ποσες",
     "the", "a", "an", "is", "are", "of", "to", "in", "and", "what",
+    "when", "where", "how",
 }
 
 
-def tokenize(text) -> list[str]:
-    """Extract words, ignoring capitalization, accents and common words."""
+def normalize(text):
+    """Apply identical normalization to document text and stop words."""
     normalized = unicodedata.normalize("NFD", text.casefold())
     normalized = "".join(
         character for character in normalized
         if not unicodedata.combining(character)
     )
-    words = re.findall(r"[^\W_]+", normalized)
-    return [word for word in words if word not in STOP_WORDS]
+    return normalized
+
+
+STOP_WORDS = {normalize(word) for word in STOP_WORDS}
+
+
+def tokenize(text) -> list[str]:
+    """Remove common words and reduce Greek word forms to stems."""
+    words = re.findall(r"[^\W_]+", normalize(text))
+    words = [word for word in words if word not in STOP_WORDS]
+    stemmer = snowballstemmer.stemmer("greek")
+    # Leave English words and numbers intact.
+    return [stemmer.stemWord(word) if re.fullmatch(r"[α-ω]+", word)
+            else word for word in words]
+
+
+# A small domain vocabulary: stemming alone does not connect these related words.
+QUERY_CONCEPTS = [
+    set(tokenize("οργάνωση οργανωτική οργανώνεται διάρθρωση οργανόγραμμα δομή")),
+    set(tokenize("έδρα εδρεύει")),
+    # Past-tense establishment, distinct from powers to establish branches.
+    set(tokenize("ιδρύθηκε συστάθηκε")),
+]
+
+
+def query_terms(question):
+    terms = set(tokenize(question))
+    for concept in QUERY_CONCEPTS:
+        if terms & concept:
+            terms.update(concept)
+    return terms
 
 
 def retrieve(question, chunks, top_k=3):
@@ -31,7 +64,7 @@ def retrieve(question, chunks, top_k=3):
     if top_k <= 0:
         raise ValueError("top_k must be greater than zero")
 
-    question_words = set(tokenize(question))
+    question_words = query_terms(question)
     if not question_words or not chunks:
         return []
 

@@ -179,3 +179,7 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# Rebuild locally with python backend/vector_search.py.
+backend/data/embeddings.json
+backend/data/embeddings.tmp

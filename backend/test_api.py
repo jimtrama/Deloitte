@@ -4,6 +4,7 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from main import app
+from vector_search import EmbeddingIndexError
 
 
 class ApiTests(unittest.TestCase):
@@ -45,6 +46,29 @@ class ApiTests(unittest.TestCase):
         with patch("main.ask", side_effect=ValueError("invalid citation")):
             response = self.client.post("/ask", json={"question": "έδρα"})
         self.assertEqual(response.status_code, 502)
+
+    def test_search_modes_are_passed_to_answer_function(self):
+        for mode in ["bm25", "vector", "hybrid"]:
+            with self.subTest(mode=mode), patch("main.ask", return_value={
+                    "answer": "Example", "sources": []}) as ask:
+                response = self.client.post("/ask", json={"question": "έδρα", "search_mode": mode})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(ask.call_args.kwargs["search_mode"], mode)
+
+    def test_existing_clients_keep_bm25_by_default(self):
+        with patch("main.ask", return_value={"answer": "Example", "sources": []}) as ask:
+            self.client.post("/ask", json={"question": "έδρα"})
+        self.assertEqual(ask.call_args.kwargs["search_mode"], "bm25")
+
+    def test_unknown_search_mode_is_rejected(self):
+        response = self.client.post("/ask", json={"question": "έδρα", "search_mode": "unknown"})
+        self.assertEqual(response.status_code, 422)
+
+    def test_vector_index_setup_error_is_actionable(self):
+        with patch("main.ask", side_effect=EmbeddingIndexError("missing index")):
+            response = self.client.post("/ask", json={"question": "έδρα", "search_mode": "vector"})
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("vector_search.py", response.json()["detail"])
 
 
 if __name__ == "__main__":
