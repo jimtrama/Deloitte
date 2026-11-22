@@ -58,10 +58,12 @@ The fallback applies to hybrid mode. Explicit vector-only mode reports an error 
 python backend/hybrid_search.py "Ποτε ιδρύθηκε η εταιρεια ;"
 python backend/hybrid_search.py "Ποια ειναι η οργανωση της εταιρειας;" --mode vector
 python backend/hybrid_search.py "Ποια είναι η έδρα της εταιρείας;" --mode bm25
-python -m unittest discover -s backend -p 'test_*.py' -v
+python -m unittest discover -s backend/tests -t backend -p 'test_*.py' -v
 ```
 
 Unit/API tests use mocks for live embedding/generation calls and can run without Ollama. The corpus regression tests require the included `data/chunks.json`.
+
+The test files live in `backend/tests/`. The `-t backend` option keeps backend modules importable when discovering tests in that subfolder.
 
 For a live comparison using the same questions and top-three cutoff for all methods:
 
