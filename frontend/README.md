@@ -23,6 +23,8 @@ npm start
 
 Open http://localhost:4200. The development proxy forwards `/ask` to FastAPI on port 8000.
 
+Choose BM25, Vector, or Hybrid using the search-mode radio buttons before submitting a question. BM25 is selected by default. The selected value is sent as `search_mode` in the API request. The controls are disabled while an answer is loading.
+
 ## Build
 
 ```bash

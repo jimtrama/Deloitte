@@ -37,7 +37,7 @@ Open http://127.0.0.1:8000/docs to try `POST /ask`:
 
 The response contains `answer` and `sources` (document, section, PDF page).
 
-`search_mode` accepts `bm25`, `vector`, or `hybrid`. Omitting it preserves BM25 behavior for existing clients, including the current frontend. Use the API docs or retrieval CLI to compare the optional modes.
+`search_mode` accepts `bm25`, `vector`, or `hybrid`. Omitting it preserves BM25 behavior for existing clients. The frontend defaults to BM25 and sends the mode selected using its radio buttons. You can also use the API docs or retrieval CLI to compare modes.
 
 ## How hybrid search works
 

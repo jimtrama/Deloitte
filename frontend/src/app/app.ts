@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { AskResponse, AskService } from './ask.service';
+import { AskResponse, AskService, SearchMode } from './ask.service';
 
 @Component({
   standalone: false,
@@ -11,6 +11,12 @@ import { AskResponse, AskService } from './ask.service';
 export class App {
   private readonly api = inject(AskService);
   question = '';
+  searchMode: SearchMode = 'bm25';
+  readonly searchModes: { value: SearchMode; label: string }[] = [
+    { value: 'bm25', label: 'BM25' },
+    { value: 'vector', label: 'Vector' },
+    { value: 'hybrid', label: 'Hybrid' },
+  ];
   readonly loading = signal(false);
   readonly result = signal<AskResponse | null>(null);
   readonly error = signal('');
@@ -29,7 +35,7 @@ export class App {
     this.result.set(null);
     this.error.set('');
 
-    this.api.ask(question).subscribe({
+    this.api.ask(question, this.searchMode).subscribe({
       next: (response) => {
         this.result.set(response);
         this.loading.set(false);

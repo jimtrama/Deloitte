@@ -23,6 +23,18 @@
           placeholder="Ποιος είναι ο σκοπός της εταιρείας;"
           aria-describedby="question-help"></textarea>
         <p id="question-help" class="hint">Ask in Greek for the best keyword matches.</p>
+        <fieldset class="search-modes" [disabled]="loading()" aria-describedby="search-mode-help">
+          <legend>Search mode</legend>
+          <div class="search-mode-options">
+            @for (mode of searchModes; track mode.value) {
+              <label class="search-mode-option">
+                <input type="radio" name="searchMode" [value]="mode.value" [(ngModel)]="searchMode">
+                <span>{{ mode.label }}</span>
+              </label>
+            }
+          </div>
+          <p id="search-mode-help" class="hint">BM25 matches keywords. Vector searches by meaning. Hybrid combines both.</p>
+        </fieldset>
         <button class="submit" type="submit" [disabled]="loading() || !question.trim()">
           {{ loading() ? 'Finding your answer…' : 'Ask the documents' }}
         </button>

@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { timeout } from 'rxjs';
 
+export type SearchMode = 'bm25' | 'vector' | 'hybrid';
+
 export interface Source {
   document: string;
   section: string;
@@ -17,7 +19,10 @@ export interface AskResponse {
 export class AskService {
   private readonly http = inject(HttpClient);
 
-  ask(question: string) {
-    return this.http.post<AskResponse>('/ask', { question }).pipe(timeout(130_000));
+  ask(question: string, searchMode: SearchMode = 'bm25') {
+    return this.http.post<AskResponse>('/ask', {
+      question,
+      search_mode: searchMode,
+    }).pipe(timeout(130_000));
   }
 }
