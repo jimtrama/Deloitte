@@ -91,6 +91,14 @@ To run only retrieval tests:
 python -m unittest discover -s backend/tests -t backend -p 'test_retrieve.py' -v
 ```
 
+### GitHub Actions
+
+[The backend test workflow](.github/workflows/backend-tests.yml) runs automatically on pushes and pull requests. It can also be started manually from the repository's **Actions** tab once the workflow is on the default branch.
+
+The workflow runs on an Ubuntu runner, installs Python 3.12 and the backend requirements, then executes the same `unittest` discovery command shown above. The pip download cache is keyed by `backend/requirements.txt`. Ollama, model downloads, an embedding index and API secrets are not required for this test suite. The checked-in `backend/data/chunks.json` supplies the corpus regression data.
+
+To activate it, commit and push the workflow to GitHub. Open **Actions > Backend tests**, select a run and expand **Run backend tests** to inspect the results. A failed test makes the job fail. The workflow checks backend tests; it does not run the live model evaluation or build the frontend.
+
 For a separate live retrieval comparison, Ollama, EmbeddingGemma and an up-to-date embedding index are required:
 
 ```bash
@@ -151,7 +159,7 @@ With more time, I would prioritize:
 2. **Chunk context:** add dedicated ingestion tests, keep legal headings with their explanations, handle abbreviations, and evaluate article-aware chunks, overlap or neighboring passages across page boundaries.
 3. **Answer faithfulness:** evaluate whether answers actually address the question and are supported by their cited passages; validate claimed quotations against source text. Compare a stronger multilingual answer model if resources allow.
 4. **Broader evaluation:** add more labeled questions, paraphrases and negative cases, then reserve a held-out set before tuning thresholds, weights or model choices.
-5. **Efficiency and delivery:** cache BM25 statistics and a validated vector index, manage inference concurrency, add frontend tests and CI, and document production routing. Authentication, rate limiting and deployment controls would be needed before offering this as a public service.
+5. **Efficiency and delivery:** cache BM25 statistics and a validated vector index, manage inference concurrency, add frontend tests/build checks to CI, and document production routing. Authentication, rate limiting and deployment controls would be needed before offering this as a public service.
 
 ## 3. Five example questions and observed answers
 
@@ -255,7 +263,7 @@ OpenAI Codex was used during development for:
 - Implementing and debugging BM25, Greek preprocessing, vector search, index validation, hybrid fusion and retrieval evaluation.
 - Building the FastAPI endpoint, response/source validation and error handling.
 - Creating the NgModule-based Angular UI, HTTP service, accessibility/loading states and search-mode radio buttons.
-- Writing and reorganizing automated tests, investigating regressions, running checks and capturing the example outputs above.
+- Writing and reorganizing automated tests, adding the GitHub Actions test workflow, investigating regressions, running checks and capturing the example outputs above.
 - Drafting setup instructions, design explanations, this README and the interview study guide.
 
 
