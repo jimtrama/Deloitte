@@ -1,0 +1,83 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  models:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        ollama pull llama3.2:3b
+        ollama pull embeddinggemma
+    restart: "no"
+
+  prepare-data:
+    image: document-assistant-backend:local
+    build:
+      context: .
+      target: backend
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - backend_data:/app/backend/data
+    depends_on:
+      models:
+        condition: service_completed_successfully
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        python backend/ingest.py
+        python backend/vector_search.py
+    healthcheck:
+      disable: true
+    restart: "no"
+
+  backend:
+    image: document-assistant-backend:local
+    build:
+      context: .
+      target: backend
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - backend_data:/app/backend/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+      prepare-data:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      target: frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
+  backend_data:

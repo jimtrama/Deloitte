@@ -2,6 +2,7 @@ import json
 import logging
 from copy import deepcopy
 from ollama import Client
+from config import OLLAMA_HOST
 from retrieve import CHUNKS_FILE, retrieve
 from hybrid_search import retrieve as hybrid_retrieve
 from vector_search import vector_retrieve
@@ -49,7 +50,7 @@ def ask(question, chunks, search_mode="bm25"):
     answer_format = deepcopy(ANSWER_FORMAT)
     answer_format["properties"]["source_numbers"]["items"]["enum"] = allowed_numbers
 
-    client = Client(host="http://localhost:11434", timeout=120)
+    client = Client(host=OLLAMA_HOST, timeout=120)
     response = client.chat(
         model="llama3.2:3b",
         messages=[

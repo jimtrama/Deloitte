@@ -6,7 +6,43 @@ BM25 is the default search mode. The UI also provides radio buttons for vector a
 
 ## 1. How to run it and the tests
 
-### Prerequisites
+### Run the whole app with Docker
+
+Install and start Docker Desktop (or Docker Engine with the Compose plugin), then run from the repository root:
+
+```bash
+docker compose up --build
+```
+
+Open [the containerized app](http://localhost:8080) or [its API docs](http://localhost:8080/docs). This setup does not require Python, Node.js or a separate Ollama installation on the host.
+
+The [multi-stage Dockerfile](Dockerfile) builds the production Angular bundle and a FastAPI runtime. [Compose](compose.yaml) starts Ollama, downloads `llama3.2:3b` and `embeddinggemma`, runs ingestion and embedding preparation, then starts FastAPI and Nginx in dependency order. The `models` and `prepare-data` services are one-time setup jobs; an exit code of 0 is expected. Nginx serves the UI and forwards `/ask`, `/docs`, `/openapi.json` and `/health` to the backend.
+
+The first startup downloads several gigabytes of images/models and prepares the index, so it can take several minutes. Follow progress with:
+
+```bash
+docker compose logs -f models prepare-data backend
+```
+
+Named volumes preserve downloaded models and generated chunks/embeddings. Stop the stack with `docker compose down`; that command keeps those volumes. Host-generated `embeddings.json`, virtual environments, dependencies and `.env` files are excluded from the build context. The default Docker setup uses CPU inference and does not share the native Ollama model cache or configure GPU acceleration.
+
+After changing code or PDFs, rebuild and rerun preparation:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+To run the backend tests in a container without starting Ollama or the other services:
+
+```bash
+docker compose build backend
+docker compose run --rm --no-deps backend python -m unittest discover -s backend/tests -t backend -p 'test_*.py' -v
+```
+
+`OLLAMA_HOST` controls the backend's model connection. Compose sets it to `http://ollama:11434`; direct local runs default to `http://localhost:11434`. The API's `/health` endpoint checks the application process without invoking a model. Only the Nginx port is published, on `127.0.0.1:8080`.
+
+### Prerequisites for running without Docker
 
 - Python 3.9 or later and `venv`.
 - Node.js compatible with Angular 22; this project was built with Node.js 24.15.0.
@@ -61,19 +97,11 @@ Keep FastAPI and Ollama running. In a separate terminal:
 
 ```bash
 cd frontend
-npm ci
 npm start
 ```
 
 Open [the app](http://localhost:4200). Enter a question, choose BM25, Vector or Hybrid, and submit it. BM25 is selected initially. The development proxy forwards `/ask` to FastAPI on port 8000. The form includes labels, keyboard-accessible controls, loading/error feedback and an answer/source list.
 
-From `frontend/`, build the production bundle with:
-
-```bash
-npm run build
-```
-
-The output is in `frontend/dist/document-assistant/browser` relative to the repository root. Production hosting would also need to route `/ask` to the backend; the development proxy is not a deployment configuration.
 
 ### Automated tests
 
@@ -83,7 +111,7 @@ From the repository root, with the Python virtual environment activated:
 python -m unittest discover -s backend/tests -t backend -p 'test_*.py' -v
 ```
 
-The suite currently contains 31 tests covering API validation, response/source handling, Greek normalization, retrieval regressions, vector scoring, index invalidation and hybrid fallback. Ollama and the FastAPI server do not need to be running: external calls are mocked where needed. Corpus regression tests use the saved `backend/data/chunks.json`; regenerate it first if it is missing. The `-t backend` option keeps application modules importable during discovery.
+The suite currently contains 33 tests covering API validation, response/source handling, Greek normalization, retrieval regressions, vector scoring, index invalidation, hybrid fallback and Ollama host configuration. Ollama and the FastAPI server do not need to be running: external calls are mocked where needed. Corpus regression tests use the saved `backend/data/chunks.json`; regenerate it first if it is missing. The `-t backend` option keeps application modules importable during discovery.
 
 To run only retrieval tests:
 
@@ -129,6 +157,7 @@ python backend/hybrid_search.py "Ποτε ιδρύθηκε η εταιρεια ;
 | Weighted reciprocal rank fusion | Combine ranking positions rather than incompatible raw BM25/cosine scores. Initial settings favor BM25: keyword weight 0.7, vector weight 0.3, rank constant 1. |
 | Local `llama3.2:3b` for answers | Avoid a paid API dependency and keep inference local. The tradeoff is limited Greek answer quality on these documents. |
 | Structured model output and source-number checks | Restrict citations to supplied passage numbers, then attach document/page metadata on the server. These checks validate reference structure, not whether the evidence supports every claim. |
+| Docker Compose with separate services | Package the built Angular UI, API and local model server independently. Setup jobs prepare models/data before the app starts; named volumes preserve derived data and model downloads. |
 
 The application flow is:
 
@@ -263,6 +292,7 @@ OpenAI Codex was used during development for:
 - Implementing and debugging BM25, Greek preprocessing, vector search, index validation, hybrid fusion and retrieval evaluation.
 - Building the FastAPI endpoint, response/source validation and error handling.
 - Creating the NgModule-based Angular UI, HTTP service, accessibility/loading states and search-mode radio buttons.
+- Adding Docker/Compose configuration, Nginx API routing, application health checks and a configurable Ollama connection address.
 - Writing and reorganizing automated tests, adding the GitHub Actions test workflow, investigating regressions, running checks and capturing the example outputs above.
 - Drafting setup instructions, design explanations, this README and the interview study guide.
 

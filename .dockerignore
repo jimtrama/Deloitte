@@ -1,0 +1,16 @@
+.git
+.github
+**/.venv
+**/__pycache__
+**/*.py[cod]
+**/node_modules
+**/.angular
+**/dist
+**/.DS_Store
+**/.env
+**/.env.*
+tmp
+output
+backend/unfixed_docs
+backend/data/embeddings.json
+backend/data/embeddings.tmp

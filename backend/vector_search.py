@@ -7,6 +7,7 @@ from pathlib import Path
 
 from ollama import Client
 
+from config import OLLAMA_HOST
 from retrieve import CHUNKS_FILE
 
 
@@ -46,7 +47,7 @@ def model_digest(client):
 def build_index(chunks, path=INDEX_FILE, batch_size=16):
     if not chunks or batch_size <= 0:
         raise ValueError("Provide chunks and a positive batch size")
-    client = Client(host="http://localhost:11434", timeout=120)
+    client = Client(host=OLLAMA_HOST, timeout=120)
     digest = model_digest(client)
     vectors = []
     for start in range(0, len(chunks), batch_size):
@@ -112,7 +113,7 @@ def vector_retrieve(question, chunks, top_k=20, min_similarity=MIN_SIMILARITY):
     if not question.strip() or not chunks:
         return []
     index = load_index(chunks)
-    client = Client(host="http://localhost:11434", timeout=120)
+    client = Client(host=OLLAMA_HOST, timeout=120)
     if model_digest(client) != index["model_digest"]:
         raise EmbeddingIndexError("Embedding model changed; rebuild the embedding index")
     response = client.embed(

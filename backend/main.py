@@ -32,6 +32,12 @@ class AskResponse(BaseModel):
     sources: list[Source]
 
 
+@app.get("/health")
+def health():
+    """Check API readiness without invoking either model."""
+    return {"status": "ok"}
+
+
 @app.post("/ask", response_model=AskResponse)
 def ask_question(request: AskRequest):
     try:
